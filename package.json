@@ -1,0 +1,17 @@
+{
+  "name": "dep-updates-ef-cms",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^3.2.5",
+    "child_process": "^1.0.2",
+    "dject": "^2.0.1",
+    "inquirer": "^8.2.6"
+  }
+}
