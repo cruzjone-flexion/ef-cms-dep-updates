@@ -20,6 +20,7 @@ function updateMajorVersions(
         'puppeteer',
         'pdfjs-dist',
         's3-files',
+        'inquirer',
     ]
 
     function includePackageFromMajorUpdate([key]) {
@@ -35,14 +36,13 @@ function updateMajorVersions(
     }
 
     function updatePackagesMajorVersion(options, npmPackages, callback) {
-         const TASKS = Object.entries(npmPackages)
+        const TASKS = Object.entries(npmPackages)
             .filter(includePackageFromMajorUpdate)
             .map((packageName) => (continuation) => updatePackageMajorVersion(options, packageName, continuation));
 
-        if(!TASKS.length) return callback('There were no MAJOR updates')
-        async.waterfall(TASKS, ()=> callback());
+        async.waterfall(TASKS, () => callback());
     }
-    
+
     return function (options, callback) {
         const commitMessage = 'DepUpdate: Updated Major Versions';
         const TASKS = [
@@ -50,9 +50,9 @@ function updateMajorVersions(
             (npmPackages, continuation) => updatePackagesMajorVersion(options, npmPackages, continuation),
             (continuation) => gitCommit(options, commitMessage, continuation),
         ];
-        async.waterfall(TASKS, (error) => {
-            if (error) console.log(error);
-            callback(null, options);
+        async.waterfall(TASKS, () => {
+            console.log('Completed Update of MAJOR updates')
+            callback();
         })
 
     }

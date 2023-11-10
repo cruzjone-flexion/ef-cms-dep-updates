@@ -37,8 +37,8 @@ function runPackagesAudit(
             (auditReport, continuation) => stopApplicationIfThereAreVulnerabilities(auditReport, continuation),
         ];
         async.waterfall(TASKS, () => {
-            console.log('Completed Audit');
-            callback(null, options);
+            console.log('Completed Running report of Packages Audit');
+            callback();
         })
     }
 }

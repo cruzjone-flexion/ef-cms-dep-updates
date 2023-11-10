@@ -15,9 +15,9 @@ function updateMinorVersions(
             (continuation) => runUpdateMinorVersionsCommand(options, continuation),
             (continuation) => gitCommit(options, commitMessage, continuation),
         ];
-        async.waterfall(TASKS, (error) => {
-            if (error) console.log('There were no MINOR updates')
-            callback(null, options);
+        async.waterfall(TASKS, () => {
+            console.log('Completed Update of MINOR updates')
+            callback();
         })
     }
 }
