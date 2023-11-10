@@ -1,5 +1,5 @@
-function execute() {
+function spawn() {
     return require('child_process').spawn;
 }
 
-module.exports = execute;
+module.exports = spawn;
