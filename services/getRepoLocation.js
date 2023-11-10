@@ -1,5 +1,5 @@
 
-function getSettingsFromUser(
+function getRepoLocation(
   async,
   fs,
   inquirer
@@ -57,4 +57,4 @@ function getSettingsFromUser(
   };
 }
 
-module.exports = getSettingsFromUser;
+module.exports = getRepoLocation;
