@@ -3,7 +3,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
   inquirer,
   path,
   fs,
-  execute
+  spawn
 ) {
   function askUserIfWantToDeploy(callback) {
     const KEY = "DEPLY_ECR_IMAGES";
@@ -125,7 +125,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
     ecrDeploymentOptions,
     callback
   ) {
-    const configPath = path.join(options.PATH_TO_REPO, ".circle/config.yml");
+    const configPath = path.join(options.PATH_TO_REPO, ".circleci/config.yml");
     const configContent = fs.readFileSync(configPath).toString();
 
     const currentEcrVersionRegex = new RegExp(
@@ -171,8 +171,25 @@ function deployNewECRImagesToFlexionAndUstcEnv(
     const BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND = `npm run deploy:ci-image`;
 
     const command = `${M1_CHIP_MACHINES_COMMAND}${SET_ENV_COMMAND}${SET_DEST_VERSION_COMMAND}${BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND}`;
-    const commandOptions = { cwd: pathToRepo };
-    execute(command, commandOptions, () => callback());
+    const commandOptions = { cwd: pathToRepo, shell: true };
+
+    const childProcess = spawn(command, commandOptions);
+    childProcess.stdout.on("data", (data) => {
+      if (
+        data.includes("Are you sure you want to continue? (press y to confirm)")
+      ) {
+        childProcess.stdin.write("y");
+        childProcess.stdin.end();
+      }
+      console.log(`stdout: ${data}`);
+    });
+
+		childProcess.stderr.on("data", (data) => console.log(`stderr: ${data}`));
+
+    childProcess.on("close", (code) => {
+      console.log(`child process exited with code ${code}`);
+      callback();
+    });
   }
 
   return function (options, callback) {
