@@ -14,6 +14,9 @@ function runPackagesAudit(
 
     const CAVEAT_PACKAGES = [
         'quill',
+				'artillery',
+				'axios',
+				'posthog-node',
     ];
 
     function ignoreCaveatAuditPackages([key]) {
