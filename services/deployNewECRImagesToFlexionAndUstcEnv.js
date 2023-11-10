@@ -136,7 +136,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
     }
 
     function getNewECRVersion(options, ecrDeploymentOptions, callback) {
-        const configPath = path.join(options.PATH_TO_REPO, '.circle/config.yml')
+        const configPath = path.join(options.PATH_TO_REPO, '.circleci/config.yml')
         const configContent = fs.readFileSync(configPath).toString();
         const currentECRVersion = getCurrentECRVersionNumber(configContent);
 
