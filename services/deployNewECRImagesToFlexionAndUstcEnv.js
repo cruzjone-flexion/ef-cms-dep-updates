@@ -1,202 +1,232 @@
 function deployNewECRImagesToFlexionAndUstcEnv(
-    async,
-    inquirer,
-    path,
-    fs,
-    execute
+  async,
+  inquirer,
+  path,
+  fs,
+  execute
 ) {
-    function askUserIfWantToDeploy(callback) {
-        const KEY = 'DEPLY_ECR_IMAGES';
-        const QUESTION = [
-            {
-                type: 'confirm',
-                name: KEY,
-                message: 'Deploy new ECR images to Flexion and USTC?',
-                default: false,
-            },
-        ];
+  function askUserIfWantToDeploy(callback) {
+    const KEY = "DEPLY_ECR_IMAGES";
+    const QUESTION = [
+      {
+        type: "confirm",
+        name: KEY,
+        message: "Deploy new ECR images to Flexion and USTC?",
+        default: false,
+      },
+    ];
 
-        inquirer
-            .prompt(QUESTION)
-            .then((answers) => {
-                const doNotDeploy = answers[KEY] ? null : 'DO_NOT_DEPLOY';
-                callback(doNotDeploy);
-            })
-    }
+    inquirer.prompt(QUESTION).then((answers) => {
+      const doNotDeploy = answers[KEY] ? null : "DO_NOT_DEPLOY";
+      callback(doNotDeploy);
+    });
+  }
 
-    function credentialNameValidation(envName, options, value) {
-        if (!value.includes(envName)) return `Credential name should include sub string "${envName}"`;
-        const environmentFolder = path.join(options.PATH_TO_REPO, 'scripts/env/environments/')
-        const credentialPath = path.join(environmentFolder, `${value}.env`)
+  function credentialNameValidation(envName, options, value) {
+    if (!value.includes(envName))
+      return `Credential name should include sub string "${envName}"`;
+    const environmentFolder = path.join(
+      options.PATH_TO_REPO,
+      "scripts/env/environments/"
+    );
+    const credentialPath = path.join(environmentFolder, `${value}.env`);
 
-        const isValidPath = fs.existsSync(credentialPath);
-        return isValidPath || 'Credential name provided does not exist.';
+    const isValidPath = fs.existsSync(credentialPath);
+    return isValidPath || "Credential name provided does not exist.";
+  }
 
-    }
+  function getFlexionCredentialName(options, ecrDeploymentOptions, callback) {
+    const KEY = "FLEXION_CREDENTIAL_NAME";
 
-    function getFlexionCredentialName(options, ecrDeploymentOptions, callback) {
-        const KEY = 'FLEXION_CREDENTIAL_NAME';
+    const QUESTION = [
+      {
+        type: "input",
+        name: KEY,
+        message: "Please enter Flexion's credential name:",
+        validate: (value) =>
+          credentialNameValidation("flexion", options, value),
+      },
+    ];
 
-        const QUESTION = [
-            {
-                type: 'input',
-                name: KEY,
-                message: 'Please enter Flexion\'s credential name:',
-                validate: (value) => credentialNameValidation('flexion', options, value),
-            }
-        ];
+    inquirer.prompt(QUESTION).then((answers) => {
+      ecrDeploymentOptions.FLEXION = answers[KEY];
+      callback();
+    });
+  }
 
-        inquirer
-            .prompt(QUESTION)
-            .then((answers) => {
-                ecrDeploymentOptions.FLEXION = answers[KEY];
-                callback();
-            });
-    }
+  function getUSTCCredentialName(options, ecrDeploymentOptions, callback) {
+    const KEY = "USTC_CREDENTIAL_NAME";
+    const QUESTION = [
+      {
+        type: "input",
+        name: KEY,
+        message: "Please enter USTC's credential name:",
+        validate: (value) => credentialNameValidation("ustc", options, value),
+      },
+    ];
 
-    function getUSTCCredentialName(options, ecrDeploymentOptions, callback) {
-        const KEY = 'USTC_CREDENTIAL_NAME';
-        const QUESTION = [
-            {
-                type: 'input',
-                name: KEY,
-                message: 'Please enter USTC\'s credential name:',
-                validate: (value) => credentialNameValidation('ustc', options, value),
+    inquirer.prompt(QUESTION).then((answers) => {
+      ecrDeploymentOptions.USTC = answers[KEY];
+      callback();
+    });
+  }
 
-            },
-        ];
+  function askUserForCredentialNames(options, ecrDeploymentOptions, callback) {
+    const TASK = [
+      (continuation) =>
+        getFlexionCredentialName(options, ecrDeploymentOptions, continuation),
+      (continuation) =>
+        getUSTCCredentialName(options, ecrDeploymentOptions, continuation),
+    ];
+    async.waterfall(TASK, () => {
+      callback();
+    });
+  }
 
-        inquirer
-            .prompt(QUESTION)
-            .then((answers) => {
-                ecrDeploymentOptions.USTC = answers[KEY];
-                callback();
-            });
-    }
+  function notifyUserThatDockerNeedsToBeRunning(callback) {
+    const QUESTION = [
+      {
+        type: "confirm",
+        name: "UNUSED_KEY",
+        message: "Make sure Docker is installed and running:",
+      },
+    ];
 
-    function askUserForCredentialNames(options, ecrDeploymentOptions, callback) {
-        const TASK = [
-            (continuation) => getFlexionCredentialName(options, ecrDeploymentOptions, continuation),
-            (continuation) => getUSTCCredentialName(options, ecrDeploymentOptions, continuation),
-        ];
-        async.waterfall(TASK, () => {
-            callback();
-        })
-    }
+    inquirer.prompt(QUESTION).then(() => callback());
+  }
 
-    function notifyUserThatDockerNeedsToBeRunning(callback) {
-        const QUESTION = [
-            {
-                type: 'confirm',
-                name: 'UNUSED_KEY',
-                message: 'Make sure Docker is installed and running:',
+  function askIfRunningOnM1Chip(ecrDeploymentOptions, callback) {
+    const KEY = "RUNNIN_M1_CHIP_MACHINE";
+    const QUESTION = [
+      {
+        type: "confirm",
+        name: KEY,
+        message: "Are you running on a M1 chip machine:",
+      },
+    ];
 
-            },
-        ];
+    inquirer.prompt(QUESTION).then((answers) => {
+      ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE = answers[KEY];
+      callback();
+    });
+  }
 
-        inquirer
-            .prompt(QUESTION)
-            .then(() => callback());
-    }
+  function getCurrentECRVersionNumber(content) {
+    const regex =
+      /\$AWS_ACCOUNT_ID\.dkr\.ecr\.us-east-1\.amazonaws\.com\/ef-cms-us-east-1:([^\s\n]+)/;
+    const match = content.match(regex);
+    if (!match || !match[1])
+      throw new Error("Unable to find current ECR version");
+    return match[1];
+  }
 
-    function askIfRunningOnM1Chip(ecrDeploymentOptions, callback) {
-        const KEY = 'RUNNIN_M1_CHIP_MACHINE';
-        const QUESTION = [
-            {
-                type: 'confirm',
-                name: KEY,
-                message: 'Are you running on a M1 chip machine:',
-            },
-        ];
+  function updateDocketImageVersionInConfigFile(
+    options,
+    ecrDeploymentOptions,
+    callback
+  ) {
+    const configPath = path.join(options.PATH_TO_REPO, ".circle/config.yml");
+    const configContent = fs.readFileSync(configPath).toString();
 
-        inquirer
-            .prompt(QUESTION)
-            .then((answers) => {
-                ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE = answers[KEY];
-                callback();
-            });
-    }
+    const currentEcrVersionRegex = new RegExp(
+      `ef-cms-us-east-1:${ecrDeploymentOptions.CURRENT_ECR_VERSION}`,
+      "g"
+    );
+    const updatedConfigContent = configContent.replace(
+      currentEcrVersionRegex,
+      `ef-cms-us-east-1:${ecrDeploymentOptions.UPDATED_ECR_VERSION}`
+    );
 
-    function getCurrentECRVersionNumber(content) {
-        const regex = /\$AWS_ACCOUNT_ID\.dkr\.ecr\.us-east-1\.amazonaws\.com\/ef-cms-us-east-1:([^\s\n]+)/;
-        const match = content.match(regex);
-        if (!match || !match[1]) throw new Error('Unable to find current ECR version');
-        return match[1];
-    }
+    fs.writeFileSync(configPath, updatedConfigContent);
+    callback();
+  }
 
-    function updateDocketImageVersionInConfigFile(options, ecrDeploymentOptions, callback) {
-        const configPath = path.join(options.PATH_TO_REPO, '.circle/config.yml')
-        const configContent = fs.readFileSync(configPath).toString();
+  function getNewECRVersion(options, ecrDeploymentOptions, callback) {
+    const configPath = path.join(options.PATH_TO_REPO, ".circleci/config.yml");
+    const configContent = fs.readFileSync(configPath).toString();
+    const currentECRVersion = getCurrentECRVersionNumber(configContent);
 
-        const currentEcrVersionRegex = new RegExp(`ef-cms-us-east-1:${ecrDeploymentOptions.CURRENT_ECR_VERSION}`, 'g')
-        const updatedConfigContent = configContent.replace(currentEcrVersionRegex, `ef-cms-us-east-1:${ecrDeploymentOptions.UPDATED_ECR_VERSION}`);
+    const versionNumbersArray = currentECRVersion.split(".").map((d) => +d);
+    versionNumbersArray[2] = versionNumbersArray[2] + 1;
+    ecrDeploymentOptions.UPDATED_ECR_VERSION = versionNumbersArray.join(".");
+    ecrDeploymentOptions.CURRENT_ECR_VERSION = currentECRVersion;
+    callback();
+  }
 
-        fs.writeFileSync(configPath, updatedConfigContent);
-        callback();
-    }
+  function deployNewECRInstanceToEnv(
+    pathToRepo,
+    credName,
+    newVersion,
+    runninM1Chip,
+    callback
+  ) {
+    console.log(
+      `\n\tDeploying new ECR image using the creadentials (${credName}), this will take a while to build the new image and upload it to AWS ECR\n\tA chrome page may open up to allow access from your AWS account, please follow and accept`
+    );
+    const M1_CHIP_MACHINES_COMMAND = runninM1Chip
+      ? "export DOCKER_DEFAULT_PLATFORM=linux/amd64 && "
+      : "";
+    const SET_ENV_COMMAND = `source scripts/env/set-env.zsh ${credName} && `;
+    const SET_DEST_VERSION_COMMAND = `export DESTINATION_TAG=${newVersion} && `;
+    const BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND = `npm run deploy:ci-image`;
 
-    function getNewECRVersion(options, ecrDeploymentOptions, callback) {
-        const configPath = path.join(options.PATH_TO_REPO, '.circleci/config.yml')
-        const configContent = fs.readFileSync(configPath).toString();
-        const currentECRVersion = getCurrentECRVersionNumber(configContent);
+    const command = `${M1_CHIP_MACHINES_COMMAND}${SET_ENV_COMMAND}${SET_DEST_VERSION_COMMAND}${BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND}`;
+    const commandOptions = { cwd: pathToRepo };
+    execute(command, commandOptions, () => callback());
+  }
 
-        const versionNumbersArray = currentECRVersion.split('.').map(d => +d);
-        versionNumbersArray[2] = versionNumbersArray[2] + 1;
-        ecrDeploymentOptions.UPDATED_ECR_VERSION = versionNumbersArray.join('.');
-        ecrDeploymentOptions.CURRENT_ECR_VERSION = currentECRVersion;
-        callback();
-    }
+  return function (options, callback) {
+    const ecrDeploymentOptions = {
+      FLEXION: "",
+      USTC: "",
+      RUNNIN_M1_CHIP_MACHINE: false,
+      CURRENT_ECR_VERSION: "",
+      UPDATED_ECR_VERSION: "",
+    };
 
-    function deployNewECRInstanceToEnv(pathToRepo, credName, newVersion, runninM1Chip, callback) {
-        console.log(`\n\tDeploying new ECR image using the creadentials (${credName}), this will take a while to build the new image and upload it to AWS ECR\n\tA chrome page may open up to allow access from your AWS account, please follow and accept`);
-        const M1_CHIP_MACHINES_COMMAND = runninM1Chip ? 'export DOCKER_DEFAULT_PLATFORM=linux/amd64 && ' : '';
-        const SET_ENV_COMMAND = `source scripts/env/set-env.zsh ${credName} && `;
-        const SET_DEST_VERSION_COMMAND = `export DESTINATION_TAG=${newVersion} && `;
-        const BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND = `npm run deploy:ci-image`;
+    const TASKS = [
+      (continuation) => askUserIfWantToDeploy(continuation),
+      (continuation) =>
+        askUserForCredentialNames(options, ecrDeploymentOptions, continuation),
+      (continuation) =>
+        askIfRunningOnM1Chip(ecrDeploymentOptions, continuation),
+      (continuation) => notifyUserThatDockerNeedsToBeRunning(continuation),
+      (continuation) =>
+        getNewECRVersion(options, ecrDeploymentOptions, continuation),
+      (continuation) =>
+        deployNewECRInstanceToEnv(
+          options.PATH_TO_REPO,
+          ecrDeploymentOptions.FLEXION,
+          ecrDeploymentOptions.UPDATED_ECR_VERSION,
+          ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE,
+          continuation
+        ),
+      (continuation) =>
+        deployNewECRInstanceToEnv(
+          options.PATH_TO_REPO,
+          ecrDeploymentOptions.USTC,
+          ecrDeploymentOptions.UPDATED_ECR_VERSION,
+          ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE,
+          continuation
+        ),
+      (continuation) =>
+        updateDocketImageVersionInConfigFile(
+          options,
+          ecrDeploymentOptions,
+          continuation
+        ),
+    ];
 
-        const command = `${M1_CHIP_MACHINES_COMMAND}${SET_ENV_COMMAND}${SET_DEST_VERSION_COMMAND}${BUILD_AND_DEPLOY_NEW_IMAGE_COMMAND}`;
-        const commandOptions = { cwd: pathToRepo };
-        execute(command, commandOptions, () => callback());
-    }
-
-    return function (options, callback) {
-        const ecrDeploymentOptions = {
-            FLEXION: '',
-            USTC: '',
-            RUNNIN_M1_CHIP_MACHINE: false,
-            CURRENT_ECR_VERSION: '',
-            UPDATED_ECR_VERSION: '',
-        }
-
-        const TASKS = [
-            (continuation) => askUserIfWantToDeploy(continuation),
-            (continuation) => askUserForCredentialNames(options, ecrDeploymentOptions, continuation),
-            (continuation) => askIfRunningOnM1Chip(ecrDeploymentOptions, continuation),
-            (continuation) => notifyUserThatDockerNeedsToBeRunning(continuation),
-            (continuation) => getNewECRVersion(options, ecrDeploymentOptions, continuation),
-            (continuation) => deployNewECRInstanceToEnv(
-                options.PATH_TO_REPO,
-                ecrDeploymentOptions.FLEXION,
-                ecrDeploymentOptions.UPDATED_ECR_VERSION,
-                ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE,
-                continuation
-            ),
-            (continuation) => deployNewECRInstanceToEnv(
-                options.PATH_TO_REPO,
-                ecrDeploymentOptions.USTC,
-                ecrDeploymentOptions.UPDATED_ECR_VERSION,
-                ecrDeploymentOptions.RUNNIN_M1_CHIP_MACHINE,
-                continuation
-            ),
-            (continuation) => updateDocketImageVersionInConfigFile(options, ecrDeploymentOptions, continuation),
-        ];
-
-        async.waterfall(TASKS, () => {
-            console.log(`\n\tPlease go to AWS (https://d-9a6729e262.awsapps.com/start#/) and confirm images were successfully uploaded for version (${ecrDeploymentOptions.UPDATED_ECR_VERSION})`)
-            console.log('\nCompleted Deploying new ECR images to Flexion and USTC accounts');
-            callback();
-        })
-    }
+    async.waterfall(TASKS, () => {
+      console.log(
+        `\n\tPlease go to AWS (https://d-9a6729e262.awsapps.com/start#/) and confirm images were successfully uploaded for version (${ecrDeploymentOptions.UPDATED_ECR_VERSION})`
+      );
+      console.log(
+        "\nCompleted Deploying new ECR images to Flexion and USTC accounts"
+      );
+      callback();
+    });
+  };
 }
 
 module.exports = deployNewECRImagesToFlexionAndUstcEnv;
