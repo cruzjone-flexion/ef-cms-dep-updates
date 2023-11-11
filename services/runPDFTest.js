@@ -12,7 +12,7 @@ function runPDFTest(
         const TASKS = [
             (continuation) => runTests(options, continuation)
         ];
-        async.waterfall(TASKS, () => {
+        async.waterfall(TASKS, (error) => {
             if (error) return console.log(`The PDF tests failed, please manually check what is wrong\nErrors shown below\n${error}`);
             console.log('Completed Running of PDF tests')
             callback();
