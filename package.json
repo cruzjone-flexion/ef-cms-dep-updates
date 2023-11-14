@@ -11,6 +11,7 @@
   "dependencies": {
     "async": "^3.2.5",
     "child_process": "^1.0.2",
+    "clipboardy": "^2.3.0",
     "compare-versions": "^6.1.0",
     "dject": "^2.0.1",
     "inquirer": "^8.2.6",
