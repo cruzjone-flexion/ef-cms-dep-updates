@@ -43,19 +43,29 @@ function updateDockerTerraformVersion(
         return { version, url };
     }
 
-
-    function updateDockerFileWithNewTerraformVersion(options, newVersion, callback) {
+    function updateDockerFileWithNewTerraformVersion(options, latestVersion, callback) {
         const DOCKER_FILE_PATH = path.join(options.PATH_TO_REPO, 'Dockerfile');
         const dockerfileContent = fs.readFileSync(DOCKER_FILE_PATH).toString();
         const terraformInfo = findTerraformVersionAndUrl(dockerfileContent);
 
         const terraformVersionRegex = new RegExp(terraformInfo.version, 'g');
-        const updatedTerraformUrl = terraformInfo.url.replace(terraformVersionRegex, newVersion);
+        const updatedTerraformUrl = terraformInfo.url.replace(terraformVersionRegex, latestVersion);
 
         const dockerfileContentRegex = new RegExp(terraformInfo.url, 'g');
         const updatedDockerfileContent = dockerfileContent.replace(dockerfileContentRegex, updatedTerraformUrl);
 
         fs.writeFileSync(DOCKER_FILE_PATH, updatedDockerfileContent);
+        callback(null, latestVersion, terraformInfo.version);
+    }
+
+    function updateTerraformVersionInShellScript(options, latestVersion, currentVersion, callback) {
+        const SHELL_SCRIPT_PATH = path.join(options.PATH_TO_REPO, 'scripts/verify-terraform-version.sh');
+        const shellScriptContent = fs.readFileSync(SHELL_SCRIPT_PATH).toString();
+
+        const currentTerraformVersionRegex = new RegExp(currentVersion, 'g');
+        const updatedDockerfileContent = shellScriptContent.replace(currentTerraformVersionRegex, latestVersion);
+
+        fs.writeFileSync(SHELL_SCRIPT_PATH, updatedDockerfileContent);
         callback();
     }
 
@@ -64,7 +74,8 @@ function updateDockerTerraformVersion(
         const commitMessage = 'DepUpdate: Updated Terraform version in Dockerfile';
         const TASKS = [
             (continuation) => getLatestTerraformVersion(continuation),
-            (version, continuation) => updateDockerFileWithNewTerraformVersion(options, version, continuation),
+            (latestVersion, continuation) => updateDockerFileWithNewTerraformVersion(options, latestVersion, continuation),
+            (latestVersion, currentVersion, continuation) => updateTerraformVersionInShellScript(options, latestVersion, currentVersion, continuation),
             (continuation) => gitCommit(options, commitMessage, continuation),
         ];
         async.waterfall(TASKS, () => {
