@@ -30,10 +30,10 @@ const TASKS = [
   (continuation) => updateDockerTerraformVersion(OPTIONS, continuation),
   (continuation) => updateDockerAwsCliVersion(OPTIONS, continuation),
   (continuation) => updateCypressBaseImage(OPTIONS, continuation),
-  (continuation) =>
-    deployNewECRImagesToFlexionAndUstcEnv(OPTIONS, continuation),
   (continuation) => updateAWSProviderForTerraform(OPTIONS, continuation),
   (continuation) => runPDFTest(OPTIONS, continuation),
+  (continuation) =>
+    deployNewECRImagesToFlexionAndUstcEnv(OPTIONS, continuation),
   (continuation) => runMigrationToExperimentalEnv(OPTIONS, continuation),
 ];
 async.waterfall(TASKS, () => console.log("COMPLETE"));
