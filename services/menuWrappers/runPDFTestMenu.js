@@ -2,7 +2,7 @@ function runPDFTestMenu(runPDFTest) {
   return {
     title: "Run PDF Tests",
     method: runPDFTest,
-    description: "Verify the PDF's still pass by running the following command",
+    description: "Verify that PDF's still pass by running tests",
   };
 }
 
