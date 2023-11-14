@@ -1,14 +1,12 @@
-'use strict'
+"use strict";
 
-const path = require('path');
+const path = require("path");
 const config = {
-    cwd: path.join(__dirname, 'services'),
-    modulePaths: [
-        `**${path.sep}*.js`
-    ],
-    allowOverride: false,
-    eagerLoad: false,
-    errorOnModuleDNE: false
+  cwd: path.join(__dirname, "services"),
+  modulePaths: [`**${path.sep}*.js`],
+  allowOverride: false,
+  eagerLoad: false,
+  errorOnModuleDNE: false,
 };
 
-module.exports = require('dject').new(config);
+module.exports = require("dject").new(config);

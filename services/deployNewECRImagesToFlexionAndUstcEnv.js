@@ -184,7 +184,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
       console.log(`stdout: ${data}`);
     });
 
-		childProcess.stderr.on("data", (data) => console.log(`stderr: ${data}`));
+    childProcess.stderr.on("data", (data) => console.log(`stderr: ${data}`));
 
     childProcess.on("close", (code) => {
       console.log(`child process exited with code ${code}`);

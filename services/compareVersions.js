@@ -1,5 +1,5 @@
 function compareVersions() {
-    return require('compare-versions').compareVersions;
+  return require("compare-versions").compareVersions;
 }
 
 module.exports = compareVersions;
