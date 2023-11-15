@@ -1,18 +1,43 @@
-function runPDFTest(async, execute) {
-  function runPDFTest(options, callback) {
-    const command =
-      'docker build -t efcms -f Dockerfile . && docker build -t efcms-local -f Dockerfile-local . && docker run -it --rm -v `pwd`/shared/test-output:/home/app/shared/test-output efcms-local sh -c "npm run test:document-generation"';
-    const commandOptions = { cwd: options.PATH_TO_REPO };
-    execute(command, commandOptions, (error) => callback(error));
+function runPDFTest(async, copyToClipboard, inquirer) {
+  const command =
+    'export DOCKER_DEFAULT_PLATFORM=linux/amd64 && docker build -t efcms -f Dockerfile . && docker build -t efcms-local -f Dockerfile-local . && docker run -it --rm -v `pwd`/shared/test-output:/home/app/shared/test-output efcms-local sh -c "npm run test:document-generation"';
+
+  function copyCommandToClipboard(callback) {
+    copyToClipboard(command);
+    callback();
   }
 
-  return function (options, callback) {
-    const TASKS = [(continuation) => runPDFTest(options, continuation)];
+  function notifyUserToRunCommand(callback) {
+    console.clear();
+    console.log("Please run the following command in the terminal of the repo");
+    console.log(
+      "Command should be in your clipboard but just in case here is the command bellow: "
+    );
+    console.log(`\n\n\t${command}\n\n`);
+    callback();
+  }
+
+  function waitUntilUserConfirmsExecution(callback) {
+    const KEY = "CONFIRM_EXECUTION";
+    const QUESTION = [
+      {
+        type: "confirm",
+        name: KEY,
+        message: "Completed step, continue.",
+        default: false,
+      },
+    ];
+
+    inquirer.prompt(QUESTION).then(() => callback());
+  }
+
+  return function (_, callback) {
+    const TASKS = [
+      (continuation) => copyCommandToClipboard(continuation),
+      (continuation) => notifyUserToRunCommand(continuation),
+      (continuation) => waitUntilUserConfirmsExecution(continuation),
+    ];
     async.waterfall(TASKS, () => {
-      if (error)
-        return console.log(
-          `The PDF tests failed, please manually check what is wrong\nErrors shown below\n${error}`
-        );
       console.log("Completed Running of PDF tests");
       callback();
     });
