@@ -1,22 +1,4 @@
 function runMigrationToExperimentalEnv(async, inquirer) {
-  function askUserIfWantToRunAMigrationOnExperimental(callback) {
-    const KEY = "RUN_MIGRATION";
-    const QUESTION = [
-      {
-        type: "confirm",
-        name: KEY,
-        message:
-          "Do you want to run a migration to an experimental enviornment?",
-        default: false,
-      },
-    ];
-
-    inquirer.prompt(QUESTION).then((answers) => {
-      const doNotRunMigration = answers[KEY] ? null : "DO_NOT_RUN_MIGRATION";
-      callback(doNotRunMigration);
-    });
-  }
-
   function askUserWhichExperimentalEnvToUse(options, callback) {
     const KEY = "EXPERIMENTAL_NUMBER";
 
@@ -83,8 +65,6 @@ function runMigrationToExperimentalEnv(async, inquirer) {
 
   return function (options, callback) {
     const TASKS = [
-      (continuation) =>
-        askUserIfWantToRunAMigrationOnExperimental(continuation),
       (continuation) => askUserWhichExperimentalEnvToUse(options, continuation),
       (continuation) => assureExperimentalEnvNotInUse(options, continuation),
       (continuation) => deleteExperimentalBranch(options, continuation),
