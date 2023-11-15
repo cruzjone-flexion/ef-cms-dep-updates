@@ -5,22 +5,6 @@ function deployNewECRImagesToFlexionAndUstcEnv(
   fs,
   spawn
 ) {
-  function askUserIfWantToDeploy(callback) {
-    const KEY = "DEPLY_ECR_IMAGES";
-    const QUESTION = [
-      {
-        type: "confirm",
-        name: KEY,
-        message: "Deploy new ECR images to Flexion and USTC?",
-        default: false,
-      },
-    ];
-
-    inquirer.prompt(QUESTION).then((answers) => {
-      const doNotDeploy = answers[KEY] ? null : "DO_NOT_DEPLOY";
-      callback(doNotDeploy);
-    });
-  }
 
   function credentialNameValidation(envName, options, value) {
     if (!value.includes(envName))
@@ -202,7 +186,6 @@ function deployNewECRImagesToFlexionAndUstcEnv(
     };
 
     const TASKS = [
-      (continuation) => askUserIfWantToDeploy(continuation),
       (continuation) =>
         askUserForCredentialNames(options, ecrDeploymentOptions, continuation),
       (continuation) =>
