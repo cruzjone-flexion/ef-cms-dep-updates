@@ -1,6 +1,8 @@
 function runPDFTest(async, copyToClipboard, inquirer) {
   const command =
-    'export DOCKER_DEFAULT_PLATFORM=linux/amd64 && docker build -t efcms -f Dockerfile . && docker build -t efcms-local -f Dockerfile-local . && docker run -it --rm -v `pwd`/shared/test-output:/home/app/shared/test-output efcms-local sh -c "npm run test:document-generation"';
+    'docker build -t efcms -f Dockerfile . && docker build -t efcms-local -f Dockerfile-local . && docker run -it --rm -v `pwd`/shared/test-output:/home/app/shared/test-output efcms-local sh -c "npm run test:document-generation"';
+
+  const m1_chip_command = "export DOCKER_DEFAULT_PLATFORM=linux/amd64";
 
   function copyCommandToClipboard(callback) {
     copyToClipboard(command);
@@ -13,6 +15,7 @@ function runPDFTest(async, copyToClipboard, inquirer) {
     console.log(
       "Command should be in your clipboard but just in case here is the command bellow: "
     );
+		console.log(`For machines running on M1 Apple chips run command before the test command: ${m1_chip_command}`)
     console.log(`\n\n\t${command}\n\n`);
     callback();
   }
