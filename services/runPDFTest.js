@@ -15,7 +15,9 @@ function runPDFTest(async, copyToClipboard, inquirer) {
     console.log(
       "Command should be in your clipboard but just in case here is the command bellow: "
     );
-		console.log(`For machines running on M1 Apple chips run command before the test command: ${m1_chip_command}`)
+    console.log(
+      `For machines running on M1 Apple chips run command before the test command: ${m1_chip_command}`
+    );
     console.log(`\n\n\t${command}\n\n`);
     callback();
   }
