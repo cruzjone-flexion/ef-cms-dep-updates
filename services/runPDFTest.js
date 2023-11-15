@@ -24,7 +24,7 @@ function runPDFTest(async, copyToClipboard, inquirer) {
         type: "confirm",
         name: KEY,
         message: "Completed step, continue.",
-        default: false,
+        default: true,
       },
     ];
 
