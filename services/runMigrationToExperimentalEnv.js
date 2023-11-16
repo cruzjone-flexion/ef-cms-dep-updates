@@ -66,7 +66,7 @@ function runMigrationToExperimentalEnv(async, inquirer) {
   return function (options, callback) {
     const TASKS = [
       (continuation) => askUserWhichExperimentalEnvToUse(options, continuation),
-      (continuation) => assureExperimentalEnvNotInUse(options, continuation),
+      (continuation) => assureExperimentalEnvNotInUse(continuation),
       (continuation) => deleteExperimentalBranch(options, continuation),
       (continuation) => createExperimentalBranch(options, continuation),
       (continuation) => runForceMigrationComman(options, continuation),
