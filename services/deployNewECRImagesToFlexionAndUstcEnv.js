@@ -3,9 +3,9 @@ function deployNewECRImagesToFlexionAndUstcEnv(
   inquirer,
   path,
   fs,
-  spawn
+  spawn,
+  gitCommit
 ) {
-
   function credentialNameValidation(envName, options, value) {
     if (!value.includes(envName))
       return `Credential name should include sub string "${envName}"`;
@@ -185,6 +185,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
       UPDATED_ECR_VERSION: "",
     };
 
+    const commitMessage = "DepUpdates: Updated CircleCi Image version";
     const TASKS = [
       (continuation) =>
         askUserForCredentialNames(options, ecrDeploymentOptions, continuation),
@@ -215,6 +216,7 @@ function deployNewECRImagesToFlexionAndUstcEnv(
           ecrDeploymentOptions,
           continuation
         ),
+      (continuation) => gitCommit(options, commitMessage, continuation),
     ];
 
     async.waterfall(TASKS, () => {
