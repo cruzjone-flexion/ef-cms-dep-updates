@@ -1,4 +1,4 @@
-function runMigrationToExperimentalEnv(async, inquirer) {
+function runMigrationToExperimentalEnv(async, inquirer, execute) {
   function askUserWhichExperimentalEnvToUse(options, callback) {
     const KEY = "EXPERIMENTAL_NUMBER";
 
