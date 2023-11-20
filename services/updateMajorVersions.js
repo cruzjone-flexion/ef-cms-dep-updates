@@ -1,10 +1,11 @@
-function updateMajorVersions(async, execute, gitCommit) {
-  function fetchPackagesThatNeedMajorUpdate(options, callback) {
+function updateMajorVersions(async, execute, gitCommit, path) {
+  function fetchPackagesThatNeedMajorUpdate(options, subDir, callback) {
     const command = "npm outdated --json";
-    const commandOptions = { cwd: options.PATH_TO_REPO };
+    const directoryPath = path.join(options.PATH_TO_REPO, subDir);
+    const commandOptions = { cwd: directoryPath };
     execute(command, commandOptions, (_, output) => {
       const npmPackages = JSON.parse(output);
-      return callback(null, npmPackages);
+            return callback(null, npmPackages);
     });
   }
 
@@ -14,7 +15,6 @@ function updateMajorVersions(async, execute, gitCommit) {
     "puppeteer",
     "pdfjs-dist",
     "s3-files",
-    "inquirer",
   ];
 
   function includePackageFromMajorUpdate([key]) {
@@ -40,12 +40,35 @@ function updateMajorVersions(async, execute, gitCommit) {
     async.waterfall(TASKS, () => callback());
   }
 
+  function updatePackageJson(options, subDir, callback) {
+    const TASKS = [
+      (continuation) =>
+        fetchPackagesThatNeedMajorUpdate(options, subDir, continuation),
+      (npmPackages, continuation) =>
+        updatePackagesMajorVersion(options, npmPackages, continuation),
+    ];
+    async.waterfall(TASKS, () => callback());
+  }
+
+  function updateAllPackageJsonsInProject(options, callback) {
+    const TASKS = [
+      (continuation) => updatePackageJson(options, "./", continuation),
+      (continuation) =>
+        updatePackageJson(
+          options,
+          "./web-api/runtimes/puppeteer/",
+          continuation
+        ),
+      (continuation) =>
+        updatePackageJson(options, "./cognito-triggers-sls/", continuation),
+    ];
+    async.parallel(TASKS, () => callback());
+  }
+
   return function (options, callback) {
     const commitMessage = "DepUpdate: Updated Major Versions";
     const TASKS = [
-      (continuation) => fetchPackagesThatNeedMajorUpdate(options, continuation),
-      (npmPackages, continuation) =>
-        updatePackagesMajorVersion(options, npmPackages, continuation),
+      (continuation) => updateAllPackageJsonsInProject(options, continuation),
       (continuation) => gitCommit(options, commitMessage, continuation),
     ];
     async.waterfall(TASKS, () => {
